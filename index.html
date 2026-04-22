@@ -88,10 +88,11 @@ async function uploadVideo() {
 
   document.getElementById("status").innerText = "Enviando...";
 
-  const formData = new FormData();
-  formData.append("file", blobFinal, "video.webm");
+ const formData = new FormData();
+formData.append("file", blobFinal, "video.webm");
+formData.append("upload_preset", "casamento");
 
-  await fetch("https://api.cloudinary.com/v1_1/SEU_CLOUD_NAME/video/upload", {
+  await fetch("https://api.cloudinary.com/v1_1/ddrodotaj/video/upload", {
     method: "POST",
     body: formData
   });
