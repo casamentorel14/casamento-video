@@ -6,172 +6,173 @@
 
 <title>Lucas & Rebeca</title>
 
-<!-- Fonte elegante -->
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
 
 <style>
+
 body {
   margin: 0;
-  font-family: 'Poppins', sans-serif;
-  background: linear-gradient(to bottom, #fff8dc, #dce6f2);
-  text-align: center;
+  font-family: 'Inter', sans-serif;
+  background: #fdfaf5;
   color: #2c3e50;
-  overflow-x: hidden;
 }
 
-/* FLORES FIXAS NOS CANTOS (FUNCIONA DE VERDADE) */
-.flower {
-  position: fixed;
-  width: 120px;
-  opacity: 0.8;
-  z-index: 0;
-}
-
-.flower.top-left {
-  top: 0;
-  left: 0;
-}
-
-.flower.top-right {
-  top: 0;
-  right: 0;
-  transform: scaleX(-1);
-}
-
-.flower.bottom-left {
-  bottom: 0;
-  left: 0;
-  transform: scaleY(-1);
-}
-
-.flower.bottom-right {
-  bottom: 0;
-  right: 0;
-  transform: scale(-1);
-}
-
-/* CONTEÚDO */
-.container {
-  position: relative;
-  z-index: 1;
+/* CONTAINER CENTRAL */
+.wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 20px;
 }
 
+/* CARD ESTILO CONVITE */
+.card {
+  background: white;
+  max-width: 420px;
+  width: 100%;
+  padding: 30px 25px;
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* LINHA DECORATIVA */
+.card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 4px;
+  background: #7fa1c3;
+  border-radius: 10px;
+}
+
+/* NOMES */
 h1 {
   font-family: 'Playfair Display', serif;
-  font-size: 36px;
+  font-size: 32px;
+  margin: 10px 0;
   color: #2c4a6e;
 }
 
+/* TEXTO */
 .subtitle {
-  font-size: 18px;
+  font-size: 15px;
+  color: #666;
+  margin-bottom: 5px;
 }
 
 .date {
+  font-size: 13px;
+  color: #999;
   margin-bottom: 20px;
-  color: #555;
 }
 
 /* VIDEO */
 video {
-  width: 90%;
-  max-width: 320px;
-  border-radius: 20px;
-  border: 4px solid #7fa1c3;
-  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-  background: #000;
+  width: 100%;
+  border-radius: 15px;
+  border: 2px solid #e6eef6;
+  background: black;
 }
 
 /* REC */
 .rec-status {
-  color: red;
-  font-weight: bold;
+  margin-top: 10px;
+  color: #e74c3c;
+  font-weight: 500;
   display: none;
-  animation: pulse 1s infinite;
 }
 
 .timer {
-  font-size: 14px;
+  font-size: 13px;
+  color: #888;
 }
 
 /* BOTÕES */
+.buttons {
+  margin-top: 20px;
+}
+
 button {
-  padding: 14px 20px;
-  margin: 8px;
+  width: 100%;
+  padding: 14px;
+  margin-top: 10px;
   border: none;
-  border-radius: 30px;
-  font-size: 16px;
+  border-radius: 12px;
+  font-size: 15px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: 0.2s;
 }
 
-button:hover {
-  transform: scale(1.05);
-}
-
+/* BOTÕES ESPECÍFICOS */
 .btn-record {
   background: #7fa1c3;
   color: white;
 }
 
 .btn-stop {
-  background: #f7d794;
+  background: #f4d38c;
 }
 
 .btn-send {
-  background: #7fa1c3;
+  background: #2c4a6e;
   color: white;
-  width: 80%;
 }
 
-/* ANIMAÇÃO */
-@keyframes pulse {
-  0% {opacity: 1;}
-  50% {opacity: 0.3;}
-  100% {opacity: 1;}
+/* HOVER */
+button:hover {
+  opacity: 0.9;
 }
+
+/* STATUS */
+#status {
+  margin-top: 15px;
+  font-size: 14px;
+}
+
+/* RODAPÉ */
+.footer {
+  margin-top: 25px;
+  font-size: 13px;
+  color: #888;
+}
+
 </style>
 </head>
 
 <body>
-<img src="https://i.imgur.com/6Iej2c3.png" class="flower top-left">
-<img src="https://i.imgur.com/6Iej2c3.png" class="flower top-right">
-<img src="https://i.imgur.com/6Iej2c3.png" class="flower bottom-left">
-<img src="https://i.imgur.com/6Iej2c3.png" class="flower bottom-right">
 
-<div class="container">
+<div class="wrapper">
+  <div class="card">
 
-<h1>Lucas & Rebeca 💛</h1>
-<p class="subtitle">Deixe sua mensagem ❤️</p>
-<p class="date">14/11/2026</p>
+    <h1>Lucas & Rebeca</h1>
+    <p class="subtitle">Deixe uma mensagem especial</p>
+    <p class="date">14 de Novembro de 2026</p>
 
-<div class="camera-box">
-  <video id="preview" autoplay muted></video>
+    <video id="preview" autoplay muted></video>
 
-  <div class="corner top-left"></div>
-  <div class="corner top-right"></div>
-  <div class="corner bottom-left"></div>
-  <div class="corner bottom-right"></div>
-</div>
+    <div class="rec-status" id="recStatus">● Gravando...</div>
+    <div class="timer" id="timer"></div>
 
-<div class="rec-status" id="recStatus">🔴 Gravando...</div>
-<div class="timer" id="timer"></div>
+    <div class="buttons">
+      <button class="btn-record" onclick="startRecording()">Gravar vídeo</button>
+      <button class="btn-stop" onclick="stopRecording()">Parar gravação</button>
+      <button class="btn-send" onclick="uploadVideo()">Enviar mensagem</button>
+    </div>
 
-<br>
+    <p id="status"></p>
 
-<button class="btn-record" onclick="startRecording()">🎥 Gravar</button>
-<button class="btn-stop" onclick="stopRecording()">⏹ Parar</button>
+    <div class="footer">
+      Obrigado por fazer parte desse momento 💛
+    </div>
 
-<br>
-
-<button class="btn-send" onclick="uploadVideo()">📤 Enviar vídeo</button>
-
-<p id="status"></p>
-
-<div class="footer">
-💖 Obrigado por fazer parte desse momento especial!
-</div>
-
+  </div>
 </div>
 
 <script>
@@ -183,7 +184,7 @@ let seconds = 0;
 
 function updateTimer() {
   seconds++;
-  document.getElementById("timer").innerText = "Tempo: " + seconds + "s";
+  document.getElementById("timer").innerText = seconds + "s";
 }
 
 async function startRecording() {
@@ -233,7 +234,7 @@ async function uploadVideo() {
     body: formData
   });
 
-  document.getElementById("status").innerText = "💖 Obrigado! Sua mensagem foi enviada com carinho!";
+  document.getElementById("status").innerText = "Mensagem enviada com sucesso 💖";
 }
 </script>
 
