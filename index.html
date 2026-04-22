@@ -10,45 +10,53 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&family=Poppins&display=swap" rel="stylesheet">
 
 <style>
-
 body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
-  background: linear-gradient(to bottom, #fff8dc, #e3edf7);
+  background: linear-gradient(to bottom, #fff8dc, #dce6f2);
   text-align: center;
   color: #2c3e50;
-  animation: fadeIn 1.5s ease;
+  overflow-x: hidden;
 }
 
-/* Flores nos cantos */
-body::before,
-body::after {
-  content: "";
+/* FLORES FIXAS NOS CANTOS (FUNCIONA DE VERDADE) */
+.flower {
   position: fixed;
-  width: 150px;
-  height: 150px;
-  background-size: contain;
-  background-repeat: no-repeat;
-  opacity: 0.6;
+  width: 120px;
+  opacity: 0.8;
+  z-index: 0;
 }
 
-body::before {
+.flower.top-left {
   top: 0;
   left: 0;
-  background-image: url('https://png.pngtree.com/png-clipart/20221018/original/pngtree-watercolor-yellow-flowers-png-image_8702303.png');
 }
 
-body::after {
+.flower.top-right {
+  top: 0;
+  right: 0;
+  transform: scaleX(-1);
+}
+
+.flower.bottom-left {
+  bottom: 0;
+  left: 0;
+  transform: scaleY(-1);
+}
+
+.flower.bottom-right {
   bottom: 0;
   right: 0;
-  background-image: url('https://png.pngtree.com/png-clipart/20221018/original/pngtree-blue-watercolor-flowers-png-image_8702304.png');
+  transform: scale(-1);
 }
 
+/* CONTEÚDO */
 .container {
+  position: relative;
+  z-index: 1;
   padding: 20px;
 }
 
-/* Nome elegante */
 h1 {
   font-family: 'Playfair Display', serif;
   font-size: 36px;
@@ -57,47 +65,27 @@ h1 {
 
 .subtitle {
   font-size: 18px;
-  margin-bottom: 5px;
 }
 
 .date {
   margin-bottom: 20px;
-  font-size: 14px;
   color: #555;
 }
 
-/* Moldura estilo câmera */
-.camera-box {
-  position: relative;
-  display: inline-block;
-}
-
+/* VIDEO */
 video {
   width: 90%;
-  max-width: 350px;
+  max-width: 320px;
   border-radius: 20px;
   border: 4px solid #7fa1c3;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  background: #000;
 }
 
-/* Cantos da câmera */
-.corner {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border: 3px solid white;
-}
-
-.top-left { top: 5px; left: 5px; border-right: none; border-bottom: none; }
-.top-right { top: 5px; right: 5px; border-left: none; border-bottom: none; }
-.bottom-left { bottom: 5px; left: 5px; border-right: none; border-top: none; }
-.bottom-right { bottom: 5px; right: 5px; border-left: none; border-top: none; }
-
-/* REC piscando */
+/* REC */
 .rec-status {
-  margin-top: 10px;
-  font-weight: bold;
   color: red;
+  font-weight: bold;
   display: none;
   animation: pulse 1s infinite;
 }
@@ -106,7 +94,7 @@ video {
   font-size: 14px;
 }
 
-/* Botões */
+/* BOTÕES */
 button {
   padding: 14px 20px;
   margin: 8px;
@@ -134,31 +122,22 @@ button:hover {
   background: #7fa1c3;
   color: white;
   width: 80%;
-  max-width: 300px;
 }
 
-/* Rodapé */
-.footer {
-  margin-top: 30px;
-  font-style: italic;
-}
-
-/* Animações */
-@keyframes fadeIn {
-  from {opacity: 0; transform: translateY(20px);}
-  to {opacity: 1; transform: translateY(0);}
-}
-
+/* ANIMAÇÃO */
 @keyframes pulse {
   0% {opacity: 1;}
-  50% {opacity: 0.4;}
+  50% {opacity: 0.3;}
   100% {opacity: 1;}
 }
-
 </style>
 </head>
 
 <body>
+<img src="https://i.imgur.com/6Iej2c3.png" class="flower top-left">
+<img src="https://i.imgur.com/6Iej2c3.png" class="flower top-right">
+<img src="https://i.imgur.com/6Iej2c3.png" class="flower bottom-left">
+<img src="https://i.imgur.com/6Iej2c3.png" class="flower bottom-right">
 
 <div class="container">
 
