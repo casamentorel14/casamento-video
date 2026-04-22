@@ -2,66 +2,143 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mensagem para os Noivos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucas & Rebeca</title>
 
 <style>
 body {
-  font-family: Arial;
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to bottom, #fff8dc, #e3edf7);
   text-align: center;
-  background: #f8f5f2;
+  color: #2c3e50;
+}
+
+.container {
   padding: 20px;
 }
 
 h1 {
-  color: #8b6f47;
+  font-size: 32px;
+  color: #2c4a6e;
 }
 
-button {
-  padding: 12px 20px;
-  margin: 10px;
-  border: none;
-  border-radius: 10px;
-  background: #8b6f47;
-  color: white;
-  font-size: 16px;
+.subtitle {
+  font-size: 18px;
+  margin-bottom: 10px;
+}
+
+.date {
+  margin-bottom: 20px;
+  font-size: 14px;
+  color: #555;
 }
 
 video {
-  border-radius: 15px;
-  margin-top: 15px;
+  width: 90%;
+  max-width: 350px;
+  border-radius: 20px;
+  border: 4px solid #7fa1c3;
+}
+
+.rec-status {
+  margin-top: 10px;
+  font-weight: bold;
+  color: red;
+  display: none;
+}
+
+.timer {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.buttons {
+  margin-top: 20px;
+}
+
+button {
+  padding: 14px 20px;
+  margin: 8px;
+  border: none;
+  border-radius: 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.btn-record {
+  background: #7fa1c3;
+  color: white;
+}
+
+.btn-stop {
+  background: #f7d794;
+}
+
+.btn-send {
+  background: #7fa1c3;
+  color: white;
+  width: 80%;
+  max-width: 300px;
+}
+
+.footer {
+  margin-top: 30px;
+  font-style: italic;
+  color: #444;
 }
 </style>
-
 </head>
 
 <body>
 
-<h1>💍 Deixe sua mensagem ❤️</h1>
-<p>Grave um vídeo para Lucas & Rebeca</p>
+<div class="container">
 
-<video id="preview" width="300" autoplay muted></video>
+<h1>💍 Lucas & Rebeca</h1>
+<p class="subtitle">Deixe sua mensagem ❤️</p>
+<p class="date">14/11/2026</p>
 
-<br>
+<video id="preview" autoplay muted></video>
 
-<button onclick="startRecording()">🎥 Gravar</button>
-<button onclick="stopRecording()">⏹ Parar</button>
+<div class="rec-status" id="recStatus">🔴 Gravando...</div>
+<div class="timer" id="timer"></div>
 
-<br>
+<div class="buttons">
+  <button class="btn-record" onclick="startRecording()">🎥 Gravar</button>
+  <button class="btn-stop" onclick="stopRecording()">⏹ Parar</button>
+</div>
 
-<button onclick="uploadVideo()">📤 Enviar vídeo</button>
+<button class="btn-send" onclick="uploadVideo()">📤 Enviar vídeo</button>
 
 <p id="status"></p>
+
+<div class="footer">
+💖 Obrigado por fazer parte desse momento especial!
+</div>
+
+</div>
 
 <script>
 let mediaRecorder;
 let recordedChunks = [];
 let blobFinal;
+let timerInterval;
+let seconds = 0;
+
+function updateTimer() {
+  seconds++;
+  document.getElementById("timer").innerText = "Tempo: " + seconds + "s";
+}
 
 async function startRecording() {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
   document.getElementById('preview').srcObject = stream;
 
   recordedChunks = [];
+  seconds = 0;
+
+  document.getElementById("recStatus").style.display = "block";
+  timerInterval = setInterval(updateTimer, 1000);
 
   mediaRecorder = new MediaRecorder(stream);
 
@@ -71,6 +148,7 @@ async function startRecording() {
 
   mediaRecorder.onstop = function() {
     blobFinal = new Blob(recordedChunks, { type: 'video/webm' });
+    clearInterval(timerInterval);
   };
 
   mediaRecorder.start();
@@ -78,6 +156,7 @@ async function startRecording() {
 
 function stopRecording() {
   mediaRecorder.stop();
+  document.getElementById("recStatus").style.display = "none";
 }
 
 async function uploadVideo() {
@@ -88,16 +167,17 @@ async function uploadVideo() {
 
   document.getElementById("status").innerText = "Enviando...";
 
- const formData = new FormData();
-formData.append("file", blobFinal, "video.webm");
-formData.append("upload_preset", "casamento");
+  const formData = new FormData();
+  formData.append("file", blobFinal, "video.webm");
+  formData.append("upload_preset", "casamento");
+  formData.append("folder", "casamento-lucas-rebeca");
 
   await fetch("https://api.cloudinary.com/v1_1/ddrodotaj/video/upload", {
     method: "POST",
     body: formData
   });
 
-  document.getElementById("status").innerText = "✅ Vídeo enviado com sucesso!";
+  document.getElementById("status").innerText = "💖 Obrigado! Sua mensagem foi enviada com carinho!";
 }
 </script>
 
