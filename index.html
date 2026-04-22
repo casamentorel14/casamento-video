@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Mensagem para os Noivos</title>
+
+<style>
+body {
+  font-family: Arial;
+  text-align: center;
+  background: #f8f5f2;
+  padding: 20px;
+}
+
+h1 {
+  color: #8b6f47;
+}
+
+button {
+  padding: 12px 20px;
+  margin: 10px;
+  border: none;
+  border-radius: 10px;
+  background: #8b6f47;
+  color: white;
+  font-size: 16px;
+}
+
+video {
+  border-radius: 15px;
+  margin-top: 15px;
+}
+</style>
+
+</head>
+
+<body>
+
+<h1>💍 Deixe sua mensagem ❤️</h1>
+<p>Grave um vídeo para Lucas & Rebeca</p>
+
+<video id="preview" width="300" autoplay muted></video>
+
+<br>
+
+<button onclick="startRecording()">🎥 Gravar</button>
+<button onclick="stopRecording()">⏹ Parar</button>
+
+<br>
+
+<button onclick="uploadVideo()">📤 Enviar vídeo</button>
+
+<p id="status"></p>
+
+<script>
+let mediaRecorder;
+let recordedChunks = [];
+let blobFinal;
+
+async function startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+  document.getElementById('preview').srcObject = stream;
+
+  recordedChunks = [];
+
+  mediaRecorder = new MediaRecorder(stream);
+
+  mediaRecorder.ondataavailable = function(e) {
+    recordedChunks.push(e.data);
+  };
+
+  mediaRecorder.onstop = function() {
+    blobFinal = new Blob(recordedChunks, { type: 'video/webm' });
+  };
+
+  mediaRecorder.start();
+}
+
+function stopRecording() {
+  mediaRecorder.stop();
+}
+
+async function uploadVideo() {
+  if (!blobFinal) {
+    alert("Grave um vídeo primeiro!");
+    return;
+  }
+
+  document.getElementById("status").innerText = "Enviando...";
+
+  const formData = new FormData();
+  formData.append("file", blobFinal, "video.webm");
+
+  await fetch("https://api.cloudinary.com/v1_1/SEU_CLOUD_NAME/video/upload", {
+    method: "POST",
+    body: formData
+  });
+
+  document.getElementById("status").innerText = "✅ Vídeo enviado com sucesso!";
+}
+</script>
+
+</body>
+</html>
