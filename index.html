@@ -187,12 +187,18 @@ async function startRecording() {
     await preview.play().catch(() => {});
     placeholder.classList.add("hidden");
 
-    const options = {};
-    if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) {
-      options.mimeType = "video/webm;codecs=vp9,opus";
-    } else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")) {
-      options.mimeType = "video/webm;codecs=vp8,opus";
-    }
+    // Prioriza MP4 quando suportado (comum no Safari/iPhone), depois WebM.
+    const supportedTypes = [
+      "video/mp4;codecs=avc1.42E01E,mp4a.40.2",
+      "video/mp4",
+      "video/webm;codecs=vp9,opus",
+      "video/webm;codecs=vp8,opus",
+      "video/webm"
+    ];
+    const selectedType = supportedTypes.find(type =>
+      window.MediaRecorder && MediaRecorder.isTypeSupported(type)
+    );
+    const options = selectedType ? { mimeType: selectedType } : {};
     mediaRecorder = new MediaRecorder(cameraStream, options);
     mediaRecorder.ondataavailable = event => {
       if (event.data && event.data.size > 0) recordedChunks.push(event.data);
@@ -306,18 +312,39 @@ async function uploadVideo() {
 
   try {
     const formData = new FormData();
-    formData.append("file", blobFinal, "video.webm");
+    const mimeType = (blobFinal.type || "video/webm").toLowerCase();
+    const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+    formData.append("file", blobFinal, `mensagem-lucas-rebeca.${extension}`);
     formData.append("upload_preset", "casamento");
     formData.append("folder", "casamento-lucas-rebeca");
 
-    const response = await fetch("https://api.cloudinary.com/v1_1/ddrodotaj/video/upload", {
-      method: "POST",
-      body: formData
+    // XMLHttpRequest costuma dar feedback de progresso mais consistente no Safari/iPhone.
+    const result = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://api.cloudinary.com/v1_1/ddrodotaj/video/upload");
+      xhr.timeout = 180000;
+
+      xhr.upload.onprogress = event => {
+        if (event.lengthComputable) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          showStatus(`Enviando sua mensagem… ${percent}%`, "info", true);
+        }
+      };
+
+      xhr.onload = () => {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText || "{}"); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) {
+          resolve(data);
+        } else {
+          reject(new Error(data.error?.message || `O Cloudinary não aceitou o vídeo (erro ${xhr.status}). Confira a conexão e tente novamente.`));
+        }
+      };
+      xhr.onerror = () => reject(new Error("A conexão foi interrompida durante o envio. Confira a internet do iPhone e tente novamente. Se persistir, teste outra rede."));
+      xhr.ontimeout = () => reject(new Error("O envio demorou demais e foi interrompido. Tente novamente com uma conexão Wi-Fi estável."));
+      xhr.onabort = () => reject(new Error("O envio foi cancelado antes de terminar."));
+      xhr.send(formData);
     });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok || !result.secure_url) {
-      throw new Error(result.error?.message || "O envio não foi concluído. Verifique sua conexão e tente novamente.");
-    }
 
     showStatus("Mensagem enviada com sucesso! 💖 Obrigado por compartilhar esse momento com Lucas & Rebeca.", "success");
     caption.textContent = "Tudo certo! Sua mensagem já foi enviada aos noivos.";
