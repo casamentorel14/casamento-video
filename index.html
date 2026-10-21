@@ -108,7 +108,8 @@ button .btn-icon { margin-right:7px; }
 
   <div class="buttons">
     <button class="btn-record" id="recordBtn" onclick="startAction()"><span class="btn-icon">●</span>Começar a gravar</button>
-    <button class="btn-stop" id="stopBtn" onclick="stopRecording()" disabled><span class="btn-icon">■</span>Finalizar gravação</button>
+    <button class="btn-secondary hidden" id="pauseBtn" onclick="togglePauseRecording()" disabled><span class="btn-icon">Ⅱ</span>Pausar gravação</button>
+    <button class="btn-stop hidden" id="stopBtn" onclick="stopRecording()" disabled><span class="btn-icon">■</span>Finalizar gravação</button>
     <button class="btn-record hidden" id="captureBtn" onclick="takePhoto()"><span class="btn-icon">📷</span>Tirar foto</button>
     <button class="btn-secondary hidden" id="retakeBtn" onclick="recordAgain()"><span class="btn-icon">↻</span>Gravar novamente</button>
     <button class="btn-send" id="sendBtn" onclick="uploadVideo()" disabled><span class="btn-icon">♡</span>Enviar vídeo</button>
@@ -146,6 +147,7 @@ const statusBox = document.getElementById("status");
 const caption = document.getElementById("cameraCaption");
 const recordBtn = document.getElementById("recordBtn");
 const stopBtn = document.getElementById("stopBtn");
+const pauseBtn = document.getElementById("pauseBtn");
 const retakeBtn = document.getElementById("retakeBtn");
 const sendBtn = document.getElementById("sendBtn");
 
@@ -174,6 +176,8 @@ function setMode(mode) {
   recordBtn.classList.remove("hidden");
   recordBtn.disabled = false;
   stopBtn.classList.add("hidden");
+  pauseBtn.classList.add("hidden");
+  pauseBtn.disabled = true;
   captureBtn.classList.add("hidden");
   retakeBtn.classList.add("hidden");
   sendBtn.classList.add("hidden");
@@ -388,16 +392,25 @@ async function startRecording() {
         showStatus("Vídeo finalizado! Você pode assistir à prévia antes de enviar. 💛", "success");
         recordBtn.classList.add("hidden");
         retakeBtn.classList.remove("hidden");
+        retakeBtn.innerHTML = '<span class="btn-icon">↻</span>Gravar novamente';
+        sendBtn.classList.remove("hidden");
         sendBtn.disabled = false;
       } else {
         showStatus("Não conseguimos salvar essa gravação. Tente gravar novamente.", "error");
         setIdleButtons();
       }
       stopBtn.disabled = true;
+      stopBtn.classList.add("hidden");
+      pauseBtn.disabled = true;
+      pauseBtn.classList.add("hidden");
     };
 
     mediaRecorder.start();
     isRecording = true;
+    stopBtn.classList.remove("hidden");
+    pauseBtn.classList.remove("hidden");
+    pauseBtn.disabled = false;
+    pauseBtn.innerHTML = '<span class="btn-icon">Ⅱ</span>Pausar gravação';
     recordBtn.disabled = true;
     stopBtn.disabled = false;
     sendBtn.disabled = true;
@@ -421,6 +434,26 @@ async function startRecording() {
   }
 }
 
+function togglePauseRecording() {
+  if (!mediaRecorder || !isRecording) return;
+  if (mediaRecorder.state === "recording" && typeof mediaRecorder.pause === "function") {
+    mediaRecorder.pause();
+    clearInterval(timerInterval);
+    pauseBtn.innerHTML = '<span class="btn-icon">▶</span>Continuar gravação';
+    caption.textContent = "Gravação pausada. Você pode continuar ou finalizar o vídeo.";
+    showStatus("Gravação pausada.", "info");
+  } else if (mediaRecorder.state === "paused" && typeof mediaRecorder.resume === "function") {
+    mediaRecorder.resume();
+    pauseBtn.innerHTML = '<span class="btn-icon">Ⅱ</span>Pausar gravação';
+    caption.textContent = "Gravando sua mensagem… fale olhando para a câmera.";
+    clearStatus();
+    timerInterval = setInterval(() => {
+      seconds++;
+      timer.textContent = formatTime(seconds);
+    }, 1000);
+  }
+}
+
 function stopRecording() {
   if (!mediaRecorder || !isRecording || mediaRecorder.state === "inactive") return;
   stopBtn.disabled = true;
@@ -432,6 +465,9 @@ function setIdleButtons() {
   recordBtn.classList.remove("hidden");
   recordBtn.disabled = false;
   stopBtn.disabled = true;
+  stopBtn.classList.add("hidden");
+  pauseBtn.disabled = true;
+  pauseBtn.classList.add("hidden");
   retakeBtn.classList.add("hidden");
   sendBtn.disabled = true;
 }
@@ -471,6 +507,7 @@ function recordAgain() {
   preview.load();
   placeholder.classList.remove("hidden");
   caption.textContent = "Pronto para uma nova tentativa? Quando quiser, comece a gravar.";
+  sendBtn.classList.add("hidden");
   clearStatus();
   setIdleButtons();
   timer.textContent = "00:00";
@@ -531,6 +568,7 @@ async function uploadVideo() {
     retakeBtn.classList.add("hidden");
     recordBtn.classList.add("hidden");
     stopBtn.classList.add("hidden");
+    pauseBtn.classList.add("hidden");
   } catch (error) {
     showStatus(error.message || "Não foi possível enviar o vídeo. Tente novamente.", "error");
     sendBtn.disabled = false;
