@@ -39,7 +39,11 @@ h1 { font-family:'Playfair Display',serif; color:var(--blue-dark); font-size:cla
 .subtitle { font-size:14px; line-height:1.6; margin:0; color:#687583; }
 .date { margin:8px 0 22px; color:#9a9fa4; font-size:12px; letter-spacing:.04em; }
 .camera-shell { position:relative; background:#17212d; border-radius:19px; overflow:hidden; aspect-ratio: 4 / 3; border:4px solid #f0f3f6; box-shadow: inset 0 0 0 1px rgba(255,255,255,.2); }
-#preview { display:block; width:100%; height:100%; object-fit:cover; background:#17212d; }
+#preview, #photoPreview { display:block; width:100%; height:100%; object-fit:cover; background:#17212d; }
+  #photoPreview { position:absolute; inset:0; }
+  .mode-switch { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:0 0 14px; }
+  .mode-switch button { min-height:42px; padding:10px; background:#edf2f8; color:var(--blue-dark); }
+  .mode-switch button.active { background:var(--blue-dark); color:#fff; }
 /* Corrige o espelhamento apenas na imagem ao vivo da câmera frontal. */
 #preview.live-camera { transform: scaleX(-1); }
 .camera-placeholder { position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px; padding:24px; color:#fff; background:linear-gradient(145deg,#293c50,#111a24); transition:opacity .25s; }
@@ -84,12 +88,18 @@ button .btn-icon { margin-right:7px; }
   <p class="subtitle">Deixe uma mensagem especial para os noivos</p>
   <p class="date">14 de novembro de 2026</p>
 
+  <div class="mode-switch" aria-label="Escolha o tipo de mensagem">
+    <button type="button" id="videoModeBtn" class="active" onclick="setMode('video')">🎥 Gravar vídeo</button>
+    <button type="button" id="photoModeBtn" onclick="setMode('photo')">📷 Tirar foto</button>
+  </div>
+
   <div class="camera-shell">
     <video id="preview" autoplay muted playsinline></video>
+    <img id="photoPreview" class="hidden" alt="Prévia da foto tirada">
     <div class="camera-placeholder" id="cameraPlaceholder">
       <div class="camera-icon">♡</div>
       <strong>Sua mensagem começa aqui</strong>
-      <span>Quando estiver pronto, toque em “Começar a gravar” e compartilhe esse carinho com a gente.</span>
+      <span>Escolha tirar uma foto ou gravar um vídeo para compartilhar esse carinho com a gente.</span>
     </div>
     <div class="rec-status" id="recStatus"><span class="rec-dot"></span> REC</div>
     <div class="timer" id="timer">00:00</div>
@@ -97,10 +107,12 @@ button .btn-icon { margin-right:7px; }
   <p class="camera-caption" id="cameraCaption">Permita o acesso à câmera e ao microfone para começar.</p>
 
   <div class="buttons">
-    <button class="btn-record" id="recordBtn" onclick="startRecording()"><span class="btn-icon">●</span>Começar a gravar</button>
+    <button class="btn-record" id="recordBtn" onclick="startAction()"><span class="btn-icon">●</span>Começar a gravar</button>
     <button class="btn-stop" id="stopBtn" onclick="stopRecording()" disabled><span class="btn-icon">■</span>Finalizar gravação</button>
+    <button class="btn-record hidden" id="captureBtn" onclick="takePhoto()"><span class="btn-icon">📷</span>Tirar foto</button>
     <button class="btn-secondary hidden" id="retakeBtn" onclick="recordAgain()"><span class="btn-icon">↻</span>Gravar novamente</button>
-    <button class="btn-send" id="sendBtn" onclick="uploadVideo()" disabled><span class="btn-icon">♡</span>Enviar mensagem</button>
+    <button class="btn-send" id="sendBtn" onclick="uploadVideo()" disabled><span class="btn-icon">♡</span>Enviar vídeo</button>
+    <button class="btn-send hidden" id="sendPhotoBtn" onclick="uploadPhoto()" disabled><span class="btn-icon">♡</span>Enviar foto</button>
   </div>
 
   <div id="status" role="status" aria-live="polite"></div>
@@ -111,6 +123,9 @@ button .btn-icon { margin-right:7px; }
 let mediaRecorder = null;
 let recordedChunks = [];
 let blobFinal = null;
+let photoBlob = null;
+let currentMode = "video";
+let photoPreviewUrl = null;
 let timerInterval = null;
 let seconds = 0;
 let cameraStream = null;
@@ -119,6 +134,11 @@ let isRecording = false;
 let isUploading = false;
 
 const preview = document.getElementById("preview");
+const photoPreview = document.getElementById("photoPreview");
+const videoModeBtn = document.getElementById("videoModeBtn");
+const photoModeBtn = document.getElementById("photoModeBtn");
+const captureBtn = document.getElementById("captureBtn");
+const sendPhotoBtn = document.getElementById("sendPhotoBtn");
 const placeholder = document.getElementById("cameraPlaceholder");
 const recStatus = document.getElementById("recStatus");
 const timer = document.getElementById("timer");
@@ -128,6 +148,133 @@ const recordBtn = document.getElementById("recordBtn");
 const stopBtn = document.getElementById("stopBtn");
 const retakeBtn = document.getElementById("retakeBtn");
 const sendBtn = document.getElementById("sendBtn");
+
+function setMode(mode) {
+  if (isRecording || isUploading) return;
+  releaseCamera();
+  if (photoPreviewUrl) { URL.revokeObjectURL(photoPreviewUrl); photoPreviewUrl = null; }
+  resetPreviewUrl();
+  photoBlob = null;
+  blobFinal = null;
+  recordedChunks = [];
+  preview.pause();
+  preview.removeAttribute("src");
+  preview.srcObject = null;
+  preview.controls = false;
+  preview.muted = true;
+  preview.classList.remove("live-camera");
+  preview.classList.remove("hidden");
+  preview.load();
+  photoPreview.removeAttribute("src");
+  photoPreview.classList.add("hidden");
+  placeholder.classList.remove("hidden");
+  timer.style.display = "none";
+  recStatus.style.display = "none";
+  currentMode = mode;
+  recordBtn.classList.remove("hidden");
+  recordBtn.disabled = false;
+  stopBtn.classList.add("hidden");
+  captureBtn.classList.add("hidden");
+  retakeBtn.classList.add("hidden");
+  sendBtn.classList.add("hidden");
+  sendPhotoBtn.classList.add("hidden");
+  sendBtn.disabled = true;
+  sendPhotoBtn.disabled = true;
+  videoModeBtn.classList.toggle("active", mode === "video");
+  photoModeBtn.classList.toggle("active", mode === "photo");
+  recordBtn.innerHTML = mode === "photo"
+    ? '<span class="btn-icon">📷</span>Abrir câmera para tirar foto'
+    : '<span class="btn-icon">●</span>Começar a gravar';
+  sendBtn.classList.toggle("hidden", mode === "photo");
+  sendPhotoBtn.classList.toggle("hidden", mode !== "photo");
+  captureBtn.classList.add("hidden");
+  stopBtn.classList.add("hidden");
+  retakeBtn.classList.add("hidden");
+  clearStatus();
+  caption.textContent = mode === "photo"
+    ? "Abra a câmera e tire uma foto para guardar esse momento."
+    : "Permita o acesso à câmera e ao microfone para começar.";
+}
+
+function startAction() {
+  if (currentMode === "photo") startPhotoCamera();
+  else startRecording();
+}
+
+async function startPhotoCamera() {
+  if (isRecording || isUploading) return;
+  clearStatus();
+  try {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      throw new Error("Seu navegador não permite acessar a câmera. Abra o site por HTTPS e tente novamente.");
+    }
+    resetPreviewUrl();
+    if (photoPreviewUrl) { URL.revokeObjectURL(photoPreviewUrl); photoPreviewUrl = null; }
+    photoBlob = null;
+    photoPreview.classList.add("hidden");
+    preview.classList.remove("hidden");
+    preview.pause();
+    preview.removeAttribute("src");
+    preview.srcObject = null;
+    preview.controls = false;
+    preview.muted = true;
+    cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+    preview.srcObject = cameraStream;
+    preview.classList.add("live-camera");
+    await preview.play().catch(() => {});
+    placeholder.classList.add("hidden");
+    recordBtn.classList.add("hidden");
+    captureBtn.classList.remove("hidden");
+    captureBtn.disabled = false;
+    sendPhotoBtn.disabled = true;
+    sendPhotoBtn.classList.add("hidden");
+    sendBtn.classList.add("hidden");
+    caption.textContent = "Enquadre a foto e toque em “Tirar foto”.";
+  } catch (error) {
+    releaseCamera();
+    setIdleButtons();
+    showStatus(error.message || "Não foi possível abrir a câmera. Confira as permissões.", "error");
+  }
+}
+
+function takePhoto() {
+  if (!cameraStream || currentMode !== "photo" || isUploading) return;
+  if (!preview.videoWidth || !preview.videoHeight) {
+    showStatus("A câmera ainda está carregando. Aguarde um instante e tente novamente.", "error");
+    return;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = preview.videoWidth;
+  canvas.height = preview.videoHeight;
+  const ctx = canvas.getContext("2d");
+  // A foto salva corresponde à imagem real da câmera, sem o espelhamento visual da prévia.
+  ctx.drawImage(preview, 0, 0, canvas.width, canvas.height);
+  canvas.toBlob(blob => {
+    if (!blob) {
+      showStatus("Não foi possível preparar a foto. Tente novamente.", "error");
+      return;
+    }
+    photoBlob = blob;
+    releaseCamera();
+    preview.srcObject = null;
+    preview.classList.remove("live-camera");
+    preview.classList.add("hidden");
+    if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
+    photoPreviewUrl = URL.createObjectURL(blob);
+    photoPreview.src = photoPreviewUrl;
+    photoPreview.classList.remove("hidden");
+    captureBtn.classList.add("hidden");
+    recordBtn.classList.add("hidden");
+    retakeBtn.classList.remove("hidden");
+    retakeBtn.innerHTML = '<span class="btn-icon">↻</span>Tirar outra foto';
+    sendPhotoBtn.classList.remove("hidden");
+    sendPhotoBtn.disabled = false;
+    sendBtn.classList.add("hidden");
+    placeholder.classList.add("hidden");
+    caption.textContent = "Confira sua foto antes de enviar.";
+    showStatus("Foto pronta! Se estiver tudo certo, envie sua lembrança. 💛", "success");
+  }, "image/jpeg", 0.9);
+}
 
 function formatTime(totalSeconds) {
   const minutes = Math.floor(totalSeconds / 60).toString().padStart(2, "0");
@@ -174,6 +321,12 @@ async function startRecording() {
       throw new Error("Seu navegador não permite acessar a câmera aqui. Abra o site pelo endereço seguro (HTTPS) e tente novamente.");
     }
     resetPreviewUrl();
+    if (photoPreviewUrl) { URL.revokeObjectURL(photoPreviewUrl); photoPreviewUrl = null; }
+    photoBlob = null;
+    photoPreview.classList.add("hidden");
+    preview.classList.remove("hidden");
+    captureBtn.classList.add("hidden");
+    sendPhotoBtn.classList.add("hidden");
     blobFinal = null;
     recordedChunks = [];
     seconds = 0;
@@ -285,6 +438,28 @@ function setIdleButtons() {
 
 function recordAgain() {
   if (isRecording || isUploading) return;
+  if (currentMode === "photo") {
+    photoBlob = null;
+    if (photoPreviewUrl) { URL.revokeObjectURL(photoPreviewUrl); photoPreviewUrl = null; }
+    photoPreview.removeAttribute("src");
+    photoPreview.classList.add("hidden");
+    preview.classList.remove("hidden");
+    preview.pause();
+    preview.removeAttribute("src");
+    preview.srcObject = null;
+    preview.controls = false;
+    preview.muted = true;
+    placeholder.classList.remove("hidden");
+    clearStatus();
+    setIdleButtons();
+    retakeBtn.innerHTML = '<span class="btn-icon">↻</span>Gravar novamente';
+    sendPhotoBtn.classList.add("hidden");
+    sendPhotoBtn.disabled = true;
+    recordBtn.classList.remove("hidden");
+    recordBtn.innerHTML = '<span class="btn-icon">📷</span>Abrir câmera para tirar foto';
+    caption.textContent = "Abra a câmera e tire uma nova foto.";
+    return;
+  }
   blobFinal = null;
   recordedChunks = [];
   resetPreviewUrl();
@@ -365,10 +540,60 @@ async function uploadVideo() {
   }
 }
 
+async function uploadPhoto() {
+  if (!photoBlob || photoBlob.size === 0) {
+    showStatus("Tire uma foto antes de enviar.", "error");
+    return;
+  }
+  if (isUploading) return;
+  isUploading = true;
+  sendPhotoBtn.disabled = true;
+  retakeBtn.disabled = true;
+  showStatus("Enviando sua foto com carinho… mantenha esta página aberta até terminar.", "info", true);
+  try {
+    const formData = new FormData();
+    formData.append("file", photoBlob, "lembranca-lucas-rebeca.jpg");
+    formData.append("upload_preset", "casamento");
+    formData.append("folder", "casamento-lucas-rebeca");
+    const result = await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://api.cloudinary.com/v1_1/ddrodotaj/image/upload");
+      xhr.timeout = 180000;
+      xhr.upload.onprogress = event => {
+        if (event.lengthComputable) {
+          showStatus(`Enviando sua foto… ${Math.round(event.loaded / event.total * 100)}%`, "info", true);
+        }
+      };
+      xhr.onload = () => {
+        let data = {};
+        try { data = JSON.parse(xhr.responseText || "{}"); } catch (_) {}
+        if (xhr.status >= 200 && xhr.status < 300 && data.secure_url) resolve(data);
+        else reject(new Error(data.error?.message || `O Cloudinary não aceitou a foto (erro ${xhr.status}). Tente novamente.`));
+      };
+      xhr.onerror = () => reject(new Error("A conexão foi interrompida durante o envio. Confira a internet e tente novamente."));
+      xhr.ontimeout = () => reject(new Error("O envio demorou demais. Tente novamente com uma conexão estável."));
+      xhr.onabort = () => reject(new Error("O envio foi cancelado antes de terminar."));
+      xhr.send(formData);
+    });
+    showStatus("Foto enviada com sucesso! 💖 Obrigado por compartilhar esse momento com Lucas & Rebeca.", "success");
+    caption.textContent = "Tudo certo! Sua foto já foi enviada aos noivos.";
+    sendPhotoBtn.classList.add("hidden");
+    retakeBtn.classList.add("hidden");
+    recordBtn.classList.add("hidden");
+  } catch (error) {
+    showStatus(error.message || "Não foi possível enviar a foto. Tente novamente.", "error");
+    sendPhotoBtn.disabled = false;
+    retakeBtn.disabled = false;
+  } finally {
+    isUploading = false;
+  }
+}
+
 window.addEventListener("beforeunload", () => {
   clearInterval(timerInterval);
   releaseCamera();
   resetPreviewUrl();
+  if (photoPreviewUrl) URL.revokeObjectURL(photoPreviewUrl);
 });
 </script>
 </body>
